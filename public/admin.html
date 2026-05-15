@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NodeHost — Admin Panel</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <style>
+    /* ─── Базовые кастомизации поверх Pico.css ─── */
+
+    :root {
+      --nh-radius: 8px;
+      --nh-gap: 1rem;
+      --nh-green: #2ecc71;
+      --nh-red: #e74c3c;
+      --nh-yellow: #f39c12;
+      --nh-blue: #3498db;
+      --nh-muted: #7f8c8d;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    .nh-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+
+    /* ─── Auth screen ─── */
+
+    #auth-screen {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    #auth-box {
+      width: 100%;
+      max-width: 400px;
+      padding: 2rem;
+    }
+
+    #auth-box h1 {
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+
+    #auth-box .subtitle {
+      text-align: center;
+      color: var(--nh-muted);
+      margin-bottom: 1.5rem;
+      font-size: 0.9rem;
+    }
+
+    /* ─── Main app ─── */
+
+    #app-screen {
+      display: none;
+    }
+
+    /* ─── Status bar ─── */
+
+    .status-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+      background: var(--pico-card-background-color, #1a1a2e);
+      border: 1px solid var(--pico-card-border-color, #333);
+      border-radius: var(--nh-radius);
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .stat-card .stat-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-card .stat-label {
+      font-size: 0.8rem;
+      color: var(--nh-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* ─── Header row ─── */
+
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .header-row h2 {
+      margin: 0;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    /* ─── Apps table ─── */
+
+    .apps-table-wrapper {
+      overflow-x: auto;
+    }
+
+    table.apps-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    table.apps-table th,
+    table.apps-table td {
+      padding: 0.6rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--pico-card-border-color, #333);
+      vertical-align: middle;
+    }
+
+    table.apps-table th {
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--nh-muted);
+    }
+
+    table.apps-table tbody tr:hover {
+      background: rgba(255,255,255,0.03);
+    }
+
+    /* ─── Status badges ─── */
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .badge-running {
+      background: rgba(46,204,113,0.15);
+      color: var(--nh-green);
+    }
+
+    .badge-stopped {
+      background: rgba(231,76,60,0.15);
+      color: var(--nh-red);
+    }
+
+    .badge-error {
+      background: rgba(243,156,18,0.15);
+      color: var(--nh-yellow);
+    }
+
+    /* ─── Action buttons ─── */
+
+    .action-btns {
+      display: flex;
+      gap: 0.3rem;
+      flex-wrap: nowrap;
+    }
+
+    .btn-sm {
+      padding: 0.25rem 0.6rem;
+      font-size: 0.75rem;
+      border-radius: 4px;
+      cursor: pointer;
+      border: 1px solid var(--pico-card-border-color, #333);
+      background: var(--pico-card-background-color, #1a1a2e);
+      color: var(--pico-font-color, #fff);
+      white-space: nowrap;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .btn-sm:hover {
+      background: rgba(255,255,255,0.08);
+      border-color: var(--nh-muted);
+    }
+
+    .btn-sm.btn-danger:hover {
+      border-color: var(--nh-red);
+      color: var(--nh-red);
+    }
+
+    .btn-sm.btn-start {
+      color: var(--nh-green);
+    }
+
+    .btn-sm.btn-stop {
+      color: var(--nh-yellow);
+    }
+
+    .btn-sm.btn-restart {
+      color: var(--nh-blue);
+    }
+
+    .btn-sm.btn-logs {
+      color: var(--pico-font-color, #fff);
+    }
+
+    .btn-primary-nh {
+      background: var(--nh-blue);
+      color: #fff;
+      border: none;
+      padding: 0.4rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: opacity 0.15s;
+    }
+
+    .btn-primary-nh:hover {
+      opacity: 0.85;
+    }
+
+    /* ─── Modal ─── */
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 1000;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 5vh;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--pico-card-background-color, #1a1a2e);
+      border: 1px solid var(--pico-card-border-color, #333);
+      border-radius: var(--nh-radius);
+      width: 90%;
+      max-width: 800px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--pico-card-border-color, #333);
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--nh-muted);
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 0 0.25rem;
+      line-height: 1;
+    }
+
+    .modal-close:hover {
+      color: var(--nh-red);
+    }
+
+    .modal-body {
+      padding: 1.25rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    /* ─── Deploy form ─── */
+
+    .tabs-bar {
+      display: flex;
+      gap: 0;
+      margin-bottom: 1rem;
+      border-bottom: 2px solid var(--pico-card-border-color, #333);
+    }
+
+    .tab-btn {
+      padding: 0.6rem 1.2rem;
+      background: none;
+      border: none;
+      color: var(--nh-muted);
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .tab-btn.active {
+      color: var(--pico-font-color, #fff);
+      border-bottom-color: var(--nh-blue);
+    }
+
+    .tab-btn:hover {
+      color: var(--pico-font-color, #fff);
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    .form-row {
+      margin-bottom: 1rem;
+    }
+
+    .form-row label {
+      display: block;
+      margin-bottom: 0.3rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .form-row input,
+    .form-row textarea {
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .form-row textarea.env-input {
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-size: 0.8rem;
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+      margin-top: 1rem;
+    }
+
+    /* ─── Logs panel ─── */
+
+    .logs-toolbar {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .logs-toolbar select,
+    .logs-toolbar input {
+      margin: 0;
+      padding: 0.3rem 0.5rem;
+      font-size: 0.8rem;
+    }
+
+    .logs-toolbar label {
+      font-size: 0.8rem;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .logs-content {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+      padding: 0.75rem;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-size: 0.78rem;
+      line-height: 1.5;
+      max-height: 60vh;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: #c9d1d9;
+    }
+
+    .log-line-stderr {
+      color: var(--nh-red);
+    }
+
+    /* ─── Loading / empty states ─── */
+
+    .loading-text {
+      color: var(--nh-muted);
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .empty-text {
+      color: var(--nh-muted);
+      text-align: center;
+      padding: 2rem;
+      font-style: italic;
+    }
+
+    /* ─── Toast ─── */
+
+    #toast-container {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .toast {
+      background: var(--pico-card-background-color, #1a1a2e);
+      border: 1px solid var(--pico-card-border-color, #333);
+      border-radius: 6px;
+      padding: 0.7rem 1rem;
+      font-size: 0.85rem;
+      min-width: 200px;
+      max-width: 360px;
+      animation: toast-in 0.25s ease-out;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .toast-success {
+      border-left: 3px solid var(--nh-green);
+    }
+
+    .toast-error {
+      border-left: 3px solid var(--nh-red);
+    }
+
+    .toast-info {
+      border-left: 3px solid var(--nh-blue);
+    }
+
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateX(30px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* ─── App link ─── */
+
+    .app-link {
+      color: var(--nh-blue);
+      text-decoration: none;
+    }
+
+    .app-link:hover {
+      text-decoration: underline;
+    }
+
+    /* ─── Responsive tweaks ─── */
+
+    @media (max-width: 768px) {
+      .status-bar {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .header-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      table.apps-table {
+        font-size: 0.8rem;
+      }
+
+      table.apps-table th,
+      table.apps-table td {
+        padding: 0.4rem 0.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══ Toast container ═══ -->
+  <div id="toast-container"></div>
+
+  <!-- ═══ AUTH SCREEN ═══ -->
+  <div id="auth-screen">
+    <div id="auth-box">
+      <h1>🚀 NodeHost</h1>
+      <p class="subtitle">Admin Panel</p>
+      <form id="auth-form">
+        <div class="form-row">
+          <label for="auth-token">Master Token</label>
+          <input type="password" id="auth-token" placeholder="Вставьте токен из .env" autocomplete="off" required>
+        </div>
+        <button type="submit" class="btn-primary-nh" style="width:100%; padding:0.6rem;">Войти</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ═══ APP SCREEN ═══ -->
+  <div id="app-screen">
+    <div class="nh-container">
+
+      <!-- Header -->
+      <div class="header-row">
+        <h2>🚀 NodeHost</h2>
+        <div class="header-actions">
+          <button class="btn-primary-nh" id="btn-deploy-new">+ Deploy</button>
+          <button class="btn-sm" id="btn-refresh" title="Обновить">⟳ Refresh</button>
+          <button class="btn-sm" id="btn-logout" title="Выйти">↩ Logout</button>
+        </div>
+      </div>
+
+      <!-- Status bar -->
+      <div class="status-bar" id="status-bar">
+        <div class="stat-card"><div class="stat-value" id="stat-total">—</div><div class="stat-label">Всего</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-running" style="color:var(--nh-green)">—</div><div class="stat-label">Запущено</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-stopped" style="color:var(--nh-red)">—</div><div class="stat-label">Остановлено</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-load">—</div><div class="stat-label">Load</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-mem">—</div><div class="stat-label">Свободная RAM</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-disk">—</div><div class="stat-label">Свободный диск</div></div>
+      </div>
+
+      <!-- Apps table -->
+      <div class="apps-table-wrapper">
+        <table class="apps-table" id="apps-table">
+          <thead>
+            <tr>
+              <th>Имя</th>
+              <th>Статус</th>
+              <th>URL</th>
+              <th>Uptime</th>
+              <th>Действия</th>
+            </tr>
+          </thead>
+          <tbody id="apps-tbody">
+            <tr><td colspan="5" class="loading-text">Загрузка…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ DEPLOY MODAL ═══ -->
+  <div class="modal-overlay" id="deploy-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Деплой нового приложения</h3>
+        <button class="modal-close" id="deploy-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="tabs-bar">
+          <button class="tab-btn active" data-tab="tab-github">GitHub</button>
+          <button class="tab-btn" data-tab="tab-zip">ZIP</button>
+          <button class="tab-btn" data-tab="tab-patch">Patch</button>
+        </div>
+
+        <form id="deploy-form">
+          <!-- Common fields -->
+          <div class="form-row">
+            <label for="deploy-name">Имя приложения</label>
+            <input type="text" id="deploy-name" pattern="[a-z0-9][a-z0-9-]{1,62}[a-z0-9]" placeholder="my-app" required>
+            <small>Строчные латинские, цифры, дефисы. 2–63 символа.</small>
+          </div>
+
+          <!-- GitHub tab -->
+          <div class="tab-panel active" id="tab-github">
+            <div class="form-row">
+              <label for="gh-url">URL репозитория</label>
+              <input type="url" id="gh-url" placeholder="https://github.com/user/repo">
+            </div>
+            <div class="form-row">
+              <label for="gh-branch">Ветка</label>
+              <input type="text" id="gh-branch" placeholder="main" value="main">
+            </div>
+          </div>
+
+          <!-- ZIP tab -->
+          <div class="tab-panel" id="tab-zip">
+            <div class="form-row">
+              <label for="zip-url">URL архива</label>
+              <input type="url" id="zip-url" placeholder="https://example.com/app.zip">
+            </div>
+          </div>
+
+          <!-- Patch tab -->
+          <div class="tab-panel" id="tab-patch">
+            <div style="padding:1.5rem; text-align:center; color:var(--nh-muted);">
+              Используйте API напрямую для патч-деплоя.<br>
+              <code style="font-size:0.85rem;">POST /v1/apps</code> с <code>source.type = "patch"</code>
+            </div>
+          </div>
+
+          <!-- Start script (optional) -->
+          <div class="form-row">
+            <label for="deploy-script">Точка входа (файл, опционально)</label>
+            <input type="text" id="deploy-script" placeholder="server.js">
+            <small>Имя JS-файла. Если не указано, определяется автоматически из package.json.</small>
+          </div>
+
+          <!-- Env variables -->
+          <div class="form-row">
+            <label for="deploy-env">Env-переменные (по одной на строку, KEY=VALUE)</label>
+            <textarea id="deploy-env" class="env-input" placeholder="NODE_ENV=production&#10;API_KEY=xxx"></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn-sm" id="deploy-cancel">Отмена</button>
+            <button type="submit" class="btn-primary-nh" id="deploy-submit">Деплоить</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LOGS MODAL ═══ -->
+  <div class="modal-overlay" id="logs-modal">
+    <div class="modal-content" style="max-width:900px;">
+      <div class="modal-header">
+        <h3 id="logs-title">Логи</h3>
+        <button class="modal-close" id="logs-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="logs-toolbar">
+          <select id="logs-type">
+            <option value="all">All</option>
+            <option value="stdout">stdout</option>
+            <option value="stderr">stderr</option>
+          </select>
+          <select id="logs-lines">
+            <option value="50">50</option>
+            <option value="100" selected>100</option>
+            <option value="200">200</option>
+            <option value="500">500</option>
+          </select>
+          <label>
+            <input type="checkbox" id="logs-auto"> Auto-refresh
+          </label>
+          <input type="text" id="logs-search" placeholder="Поиск…" style="max-width:180px;">
+          <button class="btn-sm" id="logs-refresh-btn">⟳</button>
+        </div>
+        <div class="logs-content" id="logs-content">Загрузка…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MAIN JS ═══ -->
+  <script>
+  (function () {
+    'use strict';
+
+    // ─── API helpers ───
+
+    function getToken() {
+      return sessionStorage.getItem('nh_token') || '';
+    }
+
+    function apiBase() {
+      return window.location.origin;
+    }
+
+    async function apiFetch(path, opts = {}) {
+      const url = apiBase() + path;
+      const headers = Object.assign({
+        'Authorization': 'Bearer ' + getToken(),
+        'Content-Type': 'application/json',
+      }, opts.headers || {});
+
+      const res = await fetch(url, Object.assign({}, opts, { headers }));
+
+      if (res.status === 401 || res.status === 403) {
+        showAuth();
+        throw new Error('Auth failed');
+      }
+
+      if (res.status === 204) return null;
+
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || 'API error ' + res.status);
+      return body;
+    }
+
+    // ─── Toasts ───
+
+    function toast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const el = document.createElement('div');
+      el.className = 'toast toast-' + type;
+      el.textContent = message;
+      container.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transition = 'opacity 0.3s';
+        setTimeout(() => el.remove(), 300);
+      }, 3500);
+    }
+
+    // ─── Screens ───
+
+    function showAuth() {
+      document.getElementById('auth-screen').style.display = 'flex';
+      document.getElementById('app-screen').style.display = 'none';
+    }
+
+    function showApp() {
+      document.getElementById('auth-screen').style.display = 'none';
+      document.getElementById('app-screen').style.display = 'block';
+      refreshAll();
+    }
+
+    // ─── Auth form ───
+
+    document.getElementById('auth-form').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var token = document.getElementById('auth-token').value.trim();
+      if (!token) return;
+      sessionStorage.setItem('nh_token', token);
+      try {
+        await apiFetch('/v1/status'); // проверяем токен
+        showApp();
+      } catch (err) {
+        sessionStorage.removeItem('nh_token');
+        toast('Неверный токен', 'error');
+      }
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', function () {
+      sessionStorage.removeItem('nh_token');
+      showAuth();
+    });
+
+    // ─── Init check ───
+
+    if (getToken()) {
+      showApp();
+    } else {
+      showAuth();
+    }
+
+    // ─── Formatting ───
+
+    function formatUptime(seconds) {
+      if (!seconds || seconds <= 0) return '—';
+      const d = Math.floor(seconds / 86400);
+      const h = Math.floor((seconds % 86400) / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      if (d > 0) return d + 'd ' + h + 'h ' + m + 'm';
+      if (h > 0) return h + 'h ' + m + 'm';
+      return m + 'm ' + Math.floor(seconds % 60) + 's';
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    // ─── Status bar ───
+
+    async function loadStatus() {
+      try {
+        const s = await apiFetch('/v1/status');
+        document.getElementById('stat-total').textContent = s.appsTotal;
+        document.getElementById('stat-running').textContent = s.appsRunning;
+        document.getElementById('stat-stopped').textContent = s.appsStopped;
+        document.getElementById('stat-load').textContent = s.serverLoad;
+        document.getElementById('stat-mem').textContent = s.freeMemory;
+        document.getElementById('stat-disk').textContent = s.diskFree;
+      } catch (e) {
+        // silently fail — will retry
+      }
+    }
+
+    // ─── Apps table ───
+
+    let currentApps = [];
+
+    async function loadApps() {
+      try {
+        const data = await apiFetch('/v1/apps');
+        currentApps = data.apps || [];
+        renderApps();
+      } catch (e) {
+        document.getElementById('apps-tbody').innerHTML =
+          '<tr><td colspan="5" class="empty-text">Ошибка загрузки</td></tr>';
+      }
+    }
+
+    function renderApps() {
+      const tbody = document.getElementById('apps-tbody');
+      if (!currentApps.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-text">Нет приложений. Нажмите «+ Deploy» чтобы создать.</td></tr>';
+        return;
+      }
+
+      const rows = currentApps.map(function (app) {
+        const badgeClass = 'badge-' + (app.status || 'stopped');
+        const statusLabel = app.status === 'running' ? 'running' : app.status === 'stopped' ? 'stopped' : app.status;
+        const uptime = app.status === 'running' ? formatUptime(app.uptime) : '—';
+
+        return '<tr data-name="' + escapeHtml(app.name) + '">' +
+          '<td><strong>' + escapeHtml(app.name) + '</strong></td>' +
+          '<td><span class="badge ' + badgeClass + '">' + escapeHtml(statusLabel) + '</span></td>' +
+          '<td><a class="app-link" href="' + escapeHtml(app.url) + '" target="_blank" rel="noopener">' + escapeHtml(app.url) + '</a></td>' +
+          '<td>' + uptime + '</td>' +
+          '<td>' +
+            '<div class="action-btns">' +
+              (app.status === 'running'
+                ? '<button class="btn-sm btn-stop" data-action="stop" title="Stop">⏸ Stop</button>'
+                : '<button class="btn-sm btn-start" data-action="start" title="Start">▶ Start</button>') +
+              '<button class="btn-sm btn-restart" data-action="restart" title="Restart">↺ Restart</button>' +
+              '<button class="btn-sm btn-logs" data-action="logs" title="Logs">📋 Logs</button>' +
+              '<button class="btn-sm btn-danger" data-action="delete" title="Delete">✕ Delete</button>' +
+            '</div>' +
+          '</td>' +
+        '</tr>';
+      }).join('');
+
+      tbody.innerHTML = rows;
+    }
+
+    // ─── Action handlers (delegation) ───
+
+    document.getElementById('apps-tbody').addEventListener('click', async function (e) {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+
+      const row = btn.closest('tr');
+      const name = row.dataset.name;
+      const action = btn.dataset.action;
+
+      if (action === 'logs') {
+        openLogs(name);
+        return;
+      }
+
+      if (action === 'delete') {
+        if (!confirm('Удалить приложение «' + name + '»? Это действие необратимо.')) return;
+        try {
+          await apiFetch('/v1/apps/' + encodeURIComponent(name), { method: 'DELETE' });
+          toast('Приложение «' + name + '» удалено', 'success');
+          refreshAll();
+        } catch (e) {
+          toast('Ошибка удаления: ' + e.message, 'error');
+        }
+        return;
+      }
+
+      // start / stop / restart
+      btn.disabled = true;
+      btn.textContent = '…';
+      try {
+        await apiFetch('/v1/apps/' + encodeURIComponent(name) + '/' + action, { method: 'POST' });
+        toast(name + ': ' + action + ' — OK', 'success');
+        await refreshAll();
+      } catch (e) {
+        toast('Ошибка: ' + e.message, 'error');
+        await refreshAll();
+      }
+    });
+
+    // ─── Refresh ───
+
+    async function refreshAll() {
+      await Promise.all([loadStatus(), loadApps()]);
+    }
+
+    document.getElementById('btn-refresh').addEventListener('click', function () {
+      refreshAll();
+      toast('Обновлено', 'info');
+    });
+
+    // Auto-refresh every 10s
+    setInterval(function () {
+      if (document.getElementById('app-screen').style.display === 'block') {
+        refreshAll();
+      }
+    }, 10000);
+
+    // ─── Deploy modal ───
+
+    const deployModal = document.getElementById('deploy-modal');
+
+    document.getElementById('btn-deploy-new').addEventListener('click', function () {
+      deployModal.classList.add('active');
+    });
+
+    function closeDeploy() {
+      deployModal.classList.remove('active');
+    }
+
+    document.getElementById('deploy-close').addEventListener('click', closeDeploy);
+    document.getElementById('deploy-cancel').addEventListener('click', closeDeploy);
+
+    deployModal.addEventListener('click', function (e) {
+      if (e.target === deployModal) closeDeploy();
+    });
+
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
+        document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('active'); });
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    // Deploy form submit
+    document.getElementById('deploy-form').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const name = document.getElementById('deploy-name').value.trim();
+      const script = document.getElementById('deploy-script').value.trim();
+      const envRaw = document.getElementById('deploy-env').value.trim();
+
+      // Parse env
+      let env = {};
+      if (envRaw) {
+        envRaw.split('\n').forEach(function (line) {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith('#')) return;
+          const idx = trimmed.indexOf('=');
+          if (idx > 0) {
+            env[trimmed.substring(0, idx).trim()] = trimmed.substring(idx + 1).trim();
+          }
+        });
+      }
+
+      // Determine source type
+      let source;
+      const activeTab = document.querySelector('.tab-btn.active').dataset.tab;
+
+      if (activeTab === 'tab-github') {
+        const url = document.getElementById('gh-url').value.trim();
+        const branch = document.getElementById('gh-branch').value.trim() || 'main';
+        if (!url) { toast('Укажите URL репозитория', 'error'); return; }
+        source = { type: 'github', url: url, branch: branch };
+      } else if (activeTab === 'tab-zip') {
+        const url = document.getElementById('zip-url').value.trim();
+        if (!url) { toast('Укажите URL архива', 'error'); return; }
+        source = { type: 'zip', url: url };
+      } else {
+        toast('Patch-деплой через форму не поддерживается. Используйте API.', 'error');
+        return;
+      }
+
+      const payload = { name: name, source: source };
+      if (Object.keys(env).length) payload.env = env;
+      if (script) payload.startScript = script;
+
+      const submitBtn = document.getElementById('deploy-submit');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Деплой…';
+
+      try {
+        const result = await apiFetch('/v1/apps', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+        toast('✅ Деплой завершён: ' + result.url, 'success');
+        closeDeploy();
+        document.getElementById('deploy-form').reset();
+        document.getElementById('gh-branch').value = 'main';
+        refreshAll();
+      } catch (err) {
+        toast('Ошибка деплоя: ' + err.message, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Деплоить';
+      }
+    });
+
+    // ─── Logs modal ───
+
+    const logsModal = document.getElementById('logs-modal');
+    let logsAppName = '';
+    let logsAutoInterval = null;
+
+    function openLogs(name) {
+      logsAppName = name;
+      document.getElementById('logs-title').textContent = 'Логи — ' + name;
+      logsModal.classList.add('active');
+      loadLogs();
+    }
+
+    function closeLogs() {
+      logsModal.classList.remove('active');
+      logsAppName = '';
+      if (logsAutoInterval) {
+        clearInterval(logsAutoInterval);
+        logsAutoInterval = null;
+        document.getElementById('logs-auto').checked = false;
+      }
+    }
+
+    document.getElementById('logs-close').addEventListener('click', closeLogs);
+    logsModal.addEventListener('click', function (e) {
+      if (e.target === logsModal) closeLogs();
+    });
+
+    document.getElementById('logs-refresh-btn').addEventListener('click', loadLogs);
+
+    document.getElementById('logs-type').addEventListener('change', loadLogs);
+    document.getElementById('logs-lines').addEventListener('change', loadLogs);
+
+    // Auto-refresh toggle
+    document.getElementById('logs-auto').addEventListener('change', function () {
+      if (this.checked) {
+        logsAutoInterval = setInterval(loadLogs, 5000);
+      } else {
+        if (logsAutoInterval) clearInterval(logsAutoInterval);
+        logsAutoInterval = null;
+      }
+    });
+
+    // Search filter (client-side) — фильтрует по entries и перерендеривает через renderLogEntries
+    document.getElementById('logs-search').addEventListener('input', function () {
+      var query = this.value.toLowerCase();
+      var content = document.getElementById('logs-content');
+      var entries = null;
+      try { entries = JSON.parse(content.dataset.logEntries || 'null'); } catch (_) {}
+      if (!entries) return;
+
+      if (!query) {
+        var rendered = renderLogEntries(entries);
+        content.dataset.rawLines = rendered.plain;
+        content.innerHTML = rendered.html;
+        return;
+      }
+
+      var filtered = entries.filter(function (e) {
+        return ((e.line || '').toLowerCase().indexOf(query) !== -1);
+      });
+      var rendered = renderLogEntries(filtered);
+      content.innerHTML = filtered.length
+        ? rendered.html
+        : '<span style="color:var(--nh-muted)">Ничего не найдено</span>';
+    });
+
+    /**
+     * Рендер массива логов [{ ts, type, line }] в HTML.
+     * stderr-строки подсвечиваются красным через класс .log-line-stderr.
+     * Возвращает plain-text строку для фильтра поиска и HTML-контент.
+     */
+    function renderLogEntries(entries) {
+      if (!entries || !entries.length) {
+        return { plain: '', html: '<span style="color:var(--nh-muted)">Логи пусты</span>' };
+      }
+
+      var lines = [];
+      var htmlLines = [];
+      for (var i = 0; i < entries.length; i++) {
+        var entry = entries[i];
+        var ts = entry.ts ? new Date(entry.ts).toLocaleTimeString() : '';
+        var text = '[' + ts + '] ' + (entry.line || '');
+        lines.push(text);
+
+        if (entry.type === 'stderr') {
+          htmlLines.push('<span class="log-line-stderr">' + escapeHtml(text) + '</span>');
+        } else {
+          htmlLines.push(escapeHtml(text));
+        }
+      }
+
+      return { plain: lines.join('\n'), html: htmlLines.join('\n') };
+    }
+
+    async function loadLogs() {
+      if (!logsAppName) return;
+      var logLines = document.getElementById('logs-lines').value;
+      var logType = document.getElementById('logs-type').value;
+
+      try {
+        var data = await apiFetch('/v1/apps/' + encodeURIComponent(logsAppName) + '/logs?lines=' + logLines + '&type=' + logType);
+        var entries = data.logs || [];
+        var rendered = renderLogEntries(entries);
+        document.getElementById('logs-content').dataset.logEntries = JSON.stringify(entries);
+        document.getElementById('logs-content').dataset.rawLines = rendered.plain;
+        document.getElementById('logs-content').innerHTML = rendered.html;
+
+        // Re-apply search filter
+        var query = document.getElementById('logs-search').value.toLowerCase();
+        if (query) {
+          document.getElementById('logs-search').dispatchEvent(new Event('input'));
+        } else {
+          // Scroll to bottom
+          var el = document.getElementById('logs-content');
+          el.scrollTop = el.scrollHeight;
+        }
+      } catch (e) {
+        document.getElementById('logs-content').innerHTML = '<span style="color:var(--nh-red)">Ошибка загрузки логов: ' + escapeHtml(e.message) + '</span>';
+      }
+    }
+
+    // ─── Keyboard shortcuts ───
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        if (logsModal.classList.contains('active')) closeLogs();
+        else if (deployModal.classList.contains('active')) closeDeploy();
+      }
+    });
+
+  })();
+  </script>
+</body>
+</html>

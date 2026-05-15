@@ -1,0 +1,23 @@
+{
+  "name": "nodehost-api",
+  "version": "1.0.0",
+  "description": "MVP Node.js Hosting Platform — управляющий API",
+  "main": "api/index.js",
+  "scripts": {
+    "start": "node api/index.js",
+    "dev": "node --watch api/index.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.7.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "pm2": "^5.4.3",
+    "simple-git": "^3.27.0",
+    "unzipper": "^0.12.3",
+    "uuid": "^11.0.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "private": true
+}

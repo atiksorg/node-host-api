@@ -1,0 +1,16 @@
+# Caddyfile — Начальная конфигурация Caddy для NodeHost
+# Сервер создаётся и управляется через Admin API (proxy.js → initServer()).
+# Этот файл нужен только для глобальных опций и HTTP→HTTPS редиректа.
+
+{
+  # Админ API слушает на localhost:2019 (API платформы управляет маршрутами через JSON)
+  admin localhost:2019
+
+  # Авто-сертификаты Let's Encrypt для wildcard (*.domain.com)
+  # Требуется DNS-challenge или уже выпущенный wildcard-сертификат
+}
+
+# HTTP → HTTPS редирект
+:80 {
+  redir https://{host}{uri} permanent
+}
