@@ -6,7 +6,7 @@ set -euo pipefail
 
 # ─── Конфигурация ───
 
-REPO_URL="https://github.com/your-org/nodehost.git"  # ← Заменить на реальный URL
+REPO_URL="https://github.com/atiksorg/node-host-api.git"  # ← Заменить на реальный URL
 ENGINE_DIR="/opt/nodehost"
 DATA_DIR="/var/nodehost"
 NODE_HOST_USER="nodehost"
